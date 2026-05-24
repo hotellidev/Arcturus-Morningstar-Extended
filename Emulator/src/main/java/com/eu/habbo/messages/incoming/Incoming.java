@@ -469,4 +469,7 @@ public class Incoming {
     public static final int HousekeepingMuteUserEvent = 9104;
     public static final int HousekeepingKickUserEvent = 9105;
     public static final int HousekeepingForceDisconnectUserEvent = 9106;
+    public static final int HousekeepingSetUserRankEvent = 9107;
+    public static final int HousekeepingTradeLockUserEvent = 9108;
+    public static final int HousekeepingResetUserPasswordEvent = 9109;
 }
