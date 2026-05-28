@@ -12,9 +12,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class WheelManager {
@@ -22,15 +23,28 @@ public class WheelManager {
     private static final int RECENT_KEEP = 50;
     private static final int SECONDS_PER_DAY = 86400;
 
+    public static final Set<String> VALID_PRIZE_TYPES = Set.of(
+            "credits", "points", "spin", "item", "badge", "nothing");
+    public static final int MAX_PRIZES_PER_SAVE = 64;
+    public static final int MAX_STRING_LEN = 64;
+    public static final int MAX_PRIZE_AMOUNT = 1_000_000;
+    public static final int MAX_ITEM_QUANTITY = 100;
+    public static final int MAX_WEIGHT = 1_000_000;
+    public static final int MAX_EXTRA_SPINS = 10_000;
+    private static final long MIN_SPIN_INTERVAL_MS = 1500L;
+
     private final List<WheelPrize> prizes = new ArrayList<>();
     private int totalWeight = 0;
     private int freeSpinsPerDay = 1;
     private int spinCost = 50;
     private int spinCostType = 5;
 
+    private final ConcurrentHashMap<Integer, Long> lastSpinAt = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, WheelUserState> userStateCache = new ConcurrentHashMap<>();
+    private final java.util.concurrent.CopyOnWriteArrayList<WheelRecentWin> recentWinsCache = new java.util.concurrent.CopyOnWriteArrayList<>();
+
     public WheelManager() {
         long millis = System.currentTimeMillis();
-        this.createTables();
         this.reload();
         LOGGER.info("Wheel Manager -> Loaded! ({} MS)", System.currentTimeMillis() - millis);
     }
@@ -38,35 +52,7 @@ public class WheelManager {
     public void reload() {
         this.loadSettings();
         this.loadPrizes();
-    }
-
-    private void createTables() {
-        final String[] ddl = {
-                "CREATE TABLE IF NOT EXISTS `wheel_prizes` (" +
-                        "`id` INT(11) NOT NULL AUTO_INCREMENT, `type` VARCHAR(16) NOT NULL DEFAULT 'nothing', " +
-                        "`value` VARCHAR(64) NOT NULL DEFAULT '', `amount` INT(11) NOT NULL DEFAULT 1, " +
-                        "`points_type` INT(11) NOT NULL DEFAULT 5, `weight` INT(11) NOT NULL DEFAULT 1, " +
-                        "`label` VARCHAR(64) NOT NULL DEFAULT '', `enabled` TINYINT(1) NOT NULL DEFAULT 1, " +
-                        "`sort_order` INT(11) NOT NULL DEFAULT 0, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                "CREATE TABLE IF NOT EXISTS `wheel_user_state` (" +
-                        "`user_id` INT(11) NOT NULL, `free_spins` INT(11) NOT NULL DEFAULT 0, " +
-                        "`extra_spins` INT(11) NOT NULL DEFAULT 0, `last_reset` INT(11) NOT NULL DEFAULT 0, " +
-                        "PRIMARY KEY (`user_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-                "CREATE TABLE IF NOT EXISTS `wheel_recent_wins` (" +
-                        "`id` INT(11) NOT NULL AUTO_INCREMENT, `user_id` INT(11) NOT NULL, " +
-                        "`username` VARCHAR(64) NOT NULL DEFAULT '', `look` VARCHAR(255) NOT NULL DEFAULT '', " +
-                        "`prize_label` VARCHAR(64) NOT NULL DEFAULT '', `won_at` INT(11) NOT NULL DEFAULT 0, " +
-                        "PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-        };
-
-        try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
-             Statement statement = connection.createStatement()) {
-            for (String query : ddl) {
-                statement.execute(query);
-            }
-        } catch (SQLException e) {
-            LOGGER.error("Failed to create fortune wheel tables", e);
-        }
+        this.loadRecentWins();
     }
 
     private void loadSettings() {
@@ -108,8 +94,19 @@ public class WheelManager {
         return Emulator.getIntUnixTimestamp() / SECONDS_PER_DAY;
     }
 
-    // Reads the user's spin balance, applying the lazy daily reset and creating the row if missing.
-    public WheelUserState getUserState(int userId) {
+    public synchronized WheelUserState getUserState(int userId) {
+        int today = this.today();
+        WheelUserState cached = this.userStateCache.get(userId);
+
+        if (cached != null) {
+            if (cached.lastReset != today) {
+                cached.freeSpins = this.freeSpinsPerDay;
+                cached.lastReset = today;
+                this.persistUserState(userId, cached);
+            }
+            return cached;
+        }
+
         WheelUserState state = new WheelUserState();
         boolean exists = false;
 
@@ -128,7 +125,6 @@ public class WheelManager {
             LOGGER.error("Failed to read wheel state for user {}", userId, e);
         }
 
-        int today = this.today();
         if (!exists) {
             state.freeSpins = this.freeSpinsPerDay;
             state.extraSpins = 0;
@@ -140,6 +136,7 @@ public class WheelManager {
             this.persistUserState(userId, state);
         }
 
+        this.userStateCache.put(userId, state);
         return state;
     }
 
@@ -158,10 +155,13 @@ public class WheelManager {
         }
     }
 
-    // Consumes a spin (free first, then extra), picks a weighted prize, grants it and records the win.
-    // Returns the prize, or null if the user has no spins or no prizes are configured.
     public synchronized WheelPrize spin(Habbo habbo) {
         int userId = habbo.getHabboInfo().getId();
+        long now = System.currentTimeMillis();
+        Long last = this.lastSpinAt.get(userId);
+        if (last != null && (now - last) < MIN_SPIN_INTERVAL_MS) return null;
+        this.lastSpinAt.put(userId, now);
+
         WheelUserState state = this.getUserState(userId);
 
         boolean usedFree;
@@ -177,15 +177,12 @@ public class WheelManager {
 
         WheelPrize prize = this.pickWeighted();
         if (prize == null) {
-            // No prizes configured — refund the spin we just consumed.
             if (usedFree) state.freeSpins++; else state.extraSpins++;
             return null;
         }
 
         this.giveReward(habbo, prize, state);
         this.persistUserState(userId, state);
-
-        // Record every spin (including "nothing") so the live feed shows all activity.
         this.recordWin(habbo, prize);
 
         return prize;
@@ -204,21 +201,26 @@ public class WheelManager {
     }
 
     private void giveReward(Habbo habbo, WheelPrize prize, WheelUserState state) {
+        int amount = Math.max(0, Math.min(prize.amount, MAX_PRIZE_AMOUNT));
+
         switch (prize.type) {
             case "credits":
-                habbo.giveCredits(prize.amount);
+                if (amount > 0) habbo.giveCredits(amount);
                 break;
             case "points":
-                habbo.givePoints(prize.pointsType, prize.amount);
+                if (amount > 0) habbo.givePoints(prize.pointsType, amount);
                 break;
             case "spin":
-                state.extraSpins += Math.max(0, prize.amount);
+                int room = Math.max(0, MAX_EXTRA_SPINS - state.extraSpins);
+                state.extraSpins += Math.min(amount, room);
                 break;
             case "item":
-                this.giveItem(habbo, prize);
+                this.giveItem(habbo, prize, Math.min(amount, MAX_ITEM_QUANTITY));
                 break;
             case "badge":
-                habbo.addBadge(prize.value, "Fortune Wheel");
+                if (prize.value != null && !prize.value.isEmpty()) {
+                    habbo.addBadge(prize.value, "Fortune Wheel");
+                }
                 break;
             case "nothing":
             default:
@@ -226,7 +228,9 @@ public class WheelManager {
         }
     }
 
-    private void giveItem(Habbo habbo, WheelPrize prize) {
+    private void giveItem(Habbo habbo, WheelPrize prize, int quantity) {
+        if (quantity <= 0 || prize.value == null) return;
+
         int baseId;
         try {
             baseId = Integer.parseInt(prize.value.trim());
@@ -237,7 +241,6 @@ public class WheelManager {
         Item base = Emulator.getGameEnvironment().getItemManager().getItem(baseId);
         if (base == null) return;
 
-        int quantity = Math.max(1, prize.amount);
         THashSet<HabboItem> items = new THashSet<>();
         for (int i = 0; i < quantity; i++) {
             HabboItem item = Emulator.getGameEnvironment().getItemManager().createItem(habbo.getHabboInfo().getId(), base, 0, 0, "");
@@ -250,6 +253,16 @@ public class WheelManager {
     }
 
     private void recordWin(Habbo habbo, WheelPrize prize) {
+        WheelRecentWin win = new WheelRecentWin(
+                habbo.getHabboInfo().getUsername(),
+                habbo.getHabboInfo().getLook(),
+                prize.label);
+
+        this.recentWinsCache.add(0, win);
+        while (this.recentWinsCache.size() > RECENT_KEEP) {
+            this.recentWinsCache.remove(this.recentWinsCache.size() - 1);
+        }
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO wheel_recent_wins (user_id, username, look, prize_label, won_at) VALUES (?, ?, ?, ?, ?)")) {
@@ -261,7 +274,6 @@ public class WheelManager {
                 statement.executeUpdate();
             }
 
-            // Trim to the most recent RECENT_KEEP rows.
             try (PreparedStatement trim = connection.prepareStatement(
                     "DELETE FROM wheel_recent_wins WHERE id < (SELECT id FROM (SELECT id FROM wheel_recent_wins ORDER BY id DESC LIMIT 1 OFFSET ?) t)")) {
                 trim.setInt(1, RECENT_KEEP - 1);
@@ -273,24 +285,37 @@ public class WheelManager {
     }
 
     public List<WheelRecentWin> getRecentWins(int limit) {
-        List<WheelRecentWin> wins = new ArrayList<>();
+        if (limit <= 0) return new ArrayList<>();
+        int size = this.recentWinsCache.size();
+        if (size == 0) return new ArrayList<>();
+        int take = Math.min(limit, size);
+        return new ArrayList<>(this.recentWinsCache.subList(0, take));
+    }
+
+    private void loadRecentWins() {
+        this.recentWinsCache.clear();
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT username, look, prize_label FROM wheel_recent_wins ORDER BY id DESC LIMIT ?")) {
-            statement.setInt(1, limit);
+            statement.setInt(1, RECENT_KEEP);
             try (ResultSet set = statement.executeQuery()) {
                 while (set.next()) {
-                    wins.add(new WheelRecentWin(set.getString("username"), set.getString("look"), set.getString("prize_label")));
+                    this.recentWinsCache.add(new WheelRecentWin(
+                            set.getString("username"),
+                            set.getString("look"),
+                            set.getString("prize_label")));
                 }
             }
         } catch (SQLException e) {
             LOGGER.error("Failed to load wheel recent wins", e);
         }
-        return wins;
     }
 
-    // Buys one extra spin with the configured currency. Returns false if the user can't afford it.
     public synchronized boolean buySpin(Habbo habbo) {
         if (this.spinCost <= 0) return false;
+
+        int userId = habbo.getHabboInfo().getId();
+        WheelUserState state = this.getUserState(userId);
+        if (state.extraSpins >= MAX_EXTRA_SPINS) return false;
 
         if (this.spinCostType == -1) {
             if (habbo.getHabboInfo().getCredits() < this.spinCost) return false;
@@ -300,28 +325,42 @@ public class WheelManager {
             habbo.givePoints(this.spinCostType, -this.spinCost);
         }
 
-        int userId = habbo.getHabboInfo().getId();
-        WheelUserState state = this.getUserState(userId);
         state.extraSpins++;
         this.persistUserState(userId, state);
         return true;
     }
 
-    // Admin: update one prize row. Caller reloads once after a batch.
     public void savePrize(int id, String type, String value, int amount, int pointsType, int weight, String label) {
+        String safeType = (type != null && VALID_PRIZE_TYPES.contains(type)) ? type : "nothing";
+        String safeValue = truncate(value, MAX_STRING_LEN);
+        String safeLabel = truncate(label, MAX_STRING_LEN);
+        int safeAmount = clamp(amount, 0, MAX_PRIZE_AMOUNT);
+        int safeWeight = clamp(weight, 0, MAX_WEIGHT);
+
         try (Connection connection = Emulator.getDatabase().getDataSource().getConnection();
              PreparedStatement statement = connection.prepareStatement(
                      "UPDATE wheel_prizes SET type = ?, value = ?, amount = ?, points_type = ?, weight = ?, label = ? WHERE id = ?")) {
-            statement.setString(1, type != null ? type : "nothing");
-            statement.setString(2, value != null ? value : "");
-            statement.setInt(3, amount);
+            statement.setString(1, safeType);
+            statement.setString(2, safeValue);
+            statement.setInt(3, safeAmount);
             statement.setInt(4, pointsType);
-            statement.setInt(5, Math.max(0, weight));
-            statement.setString(6, label != null ? label : "");
+            statement.setInt(5, safeWeight);
+            statement.setString(6, safeLabel);
             statement.setInt(7, id);
             statement.executeUpdate();
         } catch (SQLException e) {
             LOGGER.error("Failed to save wheel prize {}", id, e);
         }
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) return "";
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 }

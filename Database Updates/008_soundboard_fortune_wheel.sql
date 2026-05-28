@@ -1,3 +1,18 @@
+-- Soundboard
+-- The room flag column + sounds table are also created at boot by
+
+ALTER TABLE `rooms` ADD COLUMN IF NOT EXISTS `soundboard_enabled` TINYINT(1) NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS `soundboard_sounds` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(64) NOT NULL DEFAULT '',            -- pad label shown in the client
+    `url` VARCHAR(255) NOT NULL DEFAULT '',            -- audio url (uploaded via CMS, like custom badges)
+    `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+    `sort_order` INT(11) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 -- Fortune Wheel
 -- Tables are also created at boot by WheelManager (CREATE TABLE IF NOT EXISTS),
 -- so applying this file is only needed to seed prizes + settings.
@@ -44,15 +59,20 @@ INSERT INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
     ('wheel.spin_cost_type', '5',      'Fortune wheel: currency type for the spin cost (5 = diamonds; -1 = credits).')
     ON DUPLICATE KEY UPDATE `comment` = VALUES(`comment`);
 
--- Example prizes (currency / spin / nothing don't reference furniture ids).
--- Add `item`/`badge` rows with your own ids: e.g.
---   INSERT INTO wheel_prizes (type, value, amount, weight, label, sort_order) VALUES ('item','<base_item_id>',1,5,'Raro',1);
---   INSERT INTO wheel_prizes (type, value, amount, weight, label, sort_order) VALUES ('badge','<BADGE_CODE>',1,5,'Distintivo',2);
+
 INSERT INTO `wheel_prizes` (`type`, `amount`, `points_type`, `weight`, `label`, `sort_order`) VALUES
-    ('points',   25, 5, 20, '25 diamanti',  10),
-    ('points',   50, 5, 12, '50 diamanti',  11),
-    ('points',  200, 5,  3, '200 diamanti', 12),
-    ('credits', 100, 0, 15, '100 crediti',  13),
-    ('spin',      1, 0, 15, '1 Giro Extra', 14),
-    ('spin',      2, 0,  6, '2 Giri Extra', 15),
-    ('nothing',   0, 0, 29, 'Nulla',        16);
+    ('points',25, 5, 20, '25 diamonds',1),
+    ('points',50, 5, 12, '50 diamonds',2),
+    ('points',200, 5,  3, '200 diamonds',3),
+    ('credits',100, 0, 15, '100 credits',4),
+    ('spin',1, 0, 15, '1 Extra spin', 5),
+    ('spin',2, 0,  6, '2 Extra spins',6),
+    ('nothing',0, 0, 29, 'Oh to bad!',7);
+	
+INSERT INTO `permission_definitions`
+  (`permission_key`, `max_value`, `comment`,
+   `rank_1`, `rank_2`, `rank_3`, `rank_4`, `rank_5`, `rank_6`, `rank_7`)
+VALUES
+  ('acc_wheeladmin', 1, 'Required to open the Fortune Wheel settings popup and edit prize rows.',
+   0, 0, 0, 0, 0, 0, 1)
+ON DUPLICATE KEY UPDATE `comment` = VALUES(`comment`);
