@@ -9,18 +9,8 @@ import com.eu.habbo.habbohotel.users.HabboManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MentionManager {
@@ -43,7 +33,6 @@ public class MentionManager {
         return Emulator.getConfig().getInt("mentions.enabled", 1) == 1;
     }
 
-    /** Broadcast category resolved from a mention alias. */
     public enum BroadcastScope {
         NONE,
         ROOM,
@@ -249,7 +238,9 @@ public class MentionManager {
     }
 
     private boolean acceptsMention(Habbo recipient, boolean isBroadcast) {
-        if (recipient == null || recipient.getHabboStats() == null) return true;
+        if (recipient == null) return false;
+        if (recipient.getClient() == null) return false;
+        if (recipient.getHabboStats() == null) return false;
         if (!recipient.getHabboStats().mentionsEnabled()) return false;
         if (isBroadcast && !recipient.getHabboStats().massMentionsEnabled()) return false;
         return true;
@@ -423,13 +414,37 @@ public class MentionManager {
         return value.substring(0, max);
     }
 
+    private boolean isBotOrPetName(Room room, String token) {
+        if (room == null || token == null || token.isEmpty()) return false;
+
+        List<com.eu.habbo.habbohotel.bots.Bot> bots = room.getBots(token);
+        if (bots != null && !bots.isEmpty()) return true;
+
+        if (room.getUnitManager() != null && room.getUnitManager().getPets() != null) {
+            for (com.eu.habbo.habbohotel.pets.Pet pet : room.getUnitManager().getPets()) {
+                if (pet != null && pet.getName() != null && pet.getName().equalsIgnoreCase(token)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private Habbo resolveHabbo(Room room, String rawToken) {
+        if (isBotOrPetName(room, rawToken)) {
+            return null;
+        }
+        String trimmedForBotCheck = trimTrailingPunctuation(rawToken);
+        if (!trimmedForBotCheck.equals(rawToken) && isBotOrPetName(room, trimmedForBotCheck)) {
+            return null;
+        }
+
         Habbo habbo = room.getHabbo(rawToken);
         if (habbo != null) {
             return habbo;
         }
-        // Hotel-wide fallback: a @nick mention must reach the target even when
-        // they are online in a different room (not just the sender's room).
+
         HabboManager habboManager = Emulator.getGameEnvironment().getHabboManager();
         habbo = habboManager.getHabbo(rawToken);
         if (habbo != null) {
