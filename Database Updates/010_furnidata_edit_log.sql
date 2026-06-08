@@ -19,4 +19,16 @@ CREATE TABLE IF NOT EXISTS `furnidata_edit_log` (
 
 INSERT IGNORE INTO `emulator_settings` (`key`,`value`) VALUES
 ('items.furnidata.edit.backup.keep','10'),
-('items.furnidata.edit.ratelimit.ms','2000');
+('items.furnidata.edit.ratelimit.ms','2000'),
+-- Server-authoritative furni names (source of truth = furnidata JSON)
+('items.furnidata.names.enabled','true'),
+('items.furnidata.path',''),
+('items.furnidata.max.bytes','67108864'),
+-- Live-reload watcher
+('items.furnidata.watch.enabled','true'),
+('items.furnidata.watch.debounce.ms','750'),
+('items.furnidata.watch.min.interval.ms','5000'),
+('items.furnidata.delta.cap','500'),
+-- Furni editor: import official names/descriptions from Habbo
+('furni.editor.import.url','https://www.habbo.com/gamedata/furnidata_json/1'),
+('furni.editor.import.cache.ms','600000');

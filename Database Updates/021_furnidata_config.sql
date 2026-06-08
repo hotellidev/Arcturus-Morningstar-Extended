@@ -23,5 +23,5 @@ INSERT IGNORE INTO `emulator_settings` (`key`,`value`) VALUES
 ('items.furnidata.watch.min.interval.ms','5000'),
 ('items.furnidata.delta.cap','500'),
 -- Furni editor: import official names/descriptions from Habbo
-('furni.editor.import.url','https://www.habbo.it/gamedata/furnidata_json/1'),
+('furni.editor.import.url','https://www.habbo.com/gamedata/furnidata_json/1'),
 ('furni.editor.import.cache.ms','600000');
