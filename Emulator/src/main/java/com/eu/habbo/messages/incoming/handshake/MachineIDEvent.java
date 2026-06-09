@@ -37,7 +37,7 @@ public class MachineIDEvent extends MessageHandler {
             // SSO ticket), so Habbo.connect() may have skipped the MAC-ban check for
             // lack of a machineId. Enforce it now that the fingerprint is known.
             if (Emulator.getGameEnvironment().getModToolManager().hasMACBan(this.client)) {
-                Emulator.getGameServer().getGameClientManager().disposeClient(this.client);
+                Emulator.getGameServer().getGameClientManager().forceDisposeClient(this.client);
             }
         }
 
