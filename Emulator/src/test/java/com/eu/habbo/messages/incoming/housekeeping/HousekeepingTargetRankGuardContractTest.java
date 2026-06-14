@@ -24,11 +24,15 @@ class HousekeepingTargetRankGuardContractTest {
     );
 
     @Test
-    void privilegedUserActionsRejectPeerAndHigherRankTargets() throws Exception {
+    void privilegedUserActionsRejectPeerRanksUnlessOperatorIsCoreRank() throws Exception {
         String guard = Files.readString(Path.of("src/main/java/com/eu/habbo/messages/incoming/housekeeping/HousekeepingTargetRankGuard.java"));
 
-        assertTrue(guard.contains("targetInfo.getRank().getId() < operator.getHabboInfo().getRank().getId()"),
-                "Housekeeping user actions must only target lower-ranked users");
+        assertTrue(guard.contains("targetRankId < operatorRankId"),
+                "non-core housekeeping operators must only target lower-ranked users");
+        assertTrue(guard.contains("isCoreRank(operatorRankId) && targetRankId <= operatorRankId"),
+                "the highest/core rank should be allowed to target peer ranks");
+        assertTrue(guard.contains("private static boolean isCoreRank(int rankId)"),
+                "core-rank detection should be centralized in the target-rank guard");
     }
 
     @Test
