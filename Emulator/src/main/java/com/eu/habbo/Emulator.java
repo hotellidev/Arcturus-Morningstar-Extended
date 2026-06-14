@@ -159,6 +159,7 @@ public final class Emulator {
             Emulator.config.register("camera.render.delay", "5");
             Emulator.config.register("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             Emulator.config.register("gui.enabled", "0");
+            Emulator.config.register("gui.autostart.enabled", "0");
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println(startupCard(hotelTimezoneId));
             Emulator.texts.register("camera.permission", "You don't have permission to use the camera!");
@@ -198,7 +199,7 @@ public final class Emulator {
             Emulator.isReady = true;
             Emulator.timeStarted = getIntUnixTimestamp();
 
-            if (Emulator.getConfig().getBoolean("gui.enabled", false)) {
+            if (shouldLaunchGui()) {
                 EmulatorDashboard.launch();
             }
 
@@ -386,6 +387,10 @@ public final class Emulator {
         } catch (Throwable e) {
             LOGGER.debug("Unable to install Jansi console bridge; continuing with raw console output.", e);
         }
+    }
+
+    static boolean shouldLaunchGui() {
+        return Emulator.getConfig() != null && Emulator.getConfig().getBoolean("gui.autostart.enabled", false);
     }
 
     private static String fit(String value, int width) {
