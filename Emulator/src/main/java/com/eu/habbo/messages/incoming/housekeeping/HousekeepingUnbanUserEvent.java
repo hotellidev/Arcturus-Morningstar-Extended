@@ -34,6 +34,11 @@ public class HousekeepingUnbanUserEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         // ModToolManager.unban only takes a username; the SQL UPDATE
         // happens against active bans (ban_expire > now), so calling it
         // on a never-banned user is a benign no-op that returns false.

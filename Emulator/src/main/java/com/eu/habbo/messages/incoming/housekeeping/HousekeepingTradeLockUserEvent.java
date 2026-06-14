@@ -43,6 +43,11 @@ public class HousekeepingTradeLockUserEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         long durationLong = (long) hours * SECONDS_IN_HOUR;
         int duration = durationLong > MAX_DURATION_SECONDS ? MAX_DURATION_SECONDS : (int) durationLong;
         int lockedUntil = Emulator.getIntUnixTimestamp() + duration;

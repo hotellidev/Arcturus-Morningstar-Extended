@@ -38,6 +38,11 @@ public class HousekeepingSetHcSubscriptionEvent extends MessageHandler {
             return;
         }
 
+        if (!HousekeepingTargetRankGuard.canTargetUser(this.client.getHabbo(), userId)) {
+            this.client.sendResponse(new HousekeepingActionResultComposer(ACTION_KEY, false, 0, "housekeeping.error.rank_too_high"));
+            return;
+        }
+
         int now = Emulator.getIntUnixTimestamp();
         int newExpire;
 
