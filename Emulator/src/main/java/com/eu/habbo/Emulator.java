@@ -159,6 +159,9 @@ public final class Emulator {
             Emulator.config.register("rcon.rate_limit.timeout_ms", "0");
             Emulator.config.register("rcon.mute.max_duration_seconds", "604800");
             Emulator.config.register("rcon.achievement.max_progress", "10000");
+            Emulator.config.register("rcon.execute_command.max_length", "256");
+            Emulator.config.register("rcon.execute_command.denied_permissions", "cmd_shutdown;cmd_update_config;cmd_update_permissions;cmd_give_rank;cmd_badge;cmd_gift;cmd_credits;cmd_points;cmd_pixels;cmd_massbadge;cmd_masscredits;cmd_massgift;cmd_massduckets;cmd_masspoints;cmd_empty;cmd_empty_bots;cmd_empty_pets;cmd_unload;cmd_ban;cmd_superban;cmd_ip_ban;cmd_machine_ban;cmd_disconnect");
+            Emulator.config.register("rcon.execute_command.allowed_permissions", "");
             String hotelTimezoneId = Emulator.getConfig().getValue("hotel.timezone", java.time.ZoneId.systemDefault().getId());
             System.out.println();
             LOGGER.info("https://github.com/duckietm/Arcturus-Morningstar-Extended, ");
