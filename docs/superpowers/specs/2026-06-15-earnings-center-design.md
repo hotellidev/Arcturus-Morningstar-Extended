@@ -63,8 +63,10 @@ Add emulator settings with safe defaults:
 - `earnings.<category>.item_id=0`
 - `earnings.<category>.item.quantity=1`
 - `earnings.<category>.hc.days=0`
+- `earnings.<category>.native.enabled=0/1`
 
 The feature defaults off so existing hotels do not receive surprise economy changes after deploying the jar.
+Marketplace and HC payday default to native integrations once the feature is enabled, because both already have server-side claim ledgers.
 
 ## Packet Contract
 
@@ -90,6 +92,8 @@ Composer format is intentionally simple and renderer-friendly: category key, ena
 - Roll back the claim record if a DB-backed reward grant fails.
 - Use the database unique key to prevent concurrent double claims.
 - `claim all` processes only claimable rows and returns per-category results.
+- Marketplace claims use the existing marketplace sold-offer payout path.
+- HC payday claims use existing unclaimed `logs_hc_payday` rows.
 
 ## Tests
 

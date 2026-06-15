@@ -78,6 +78,11 @@ This document is the emulator-side contract for the "Guadagni" UI.
 
 For `points`, `pointsType` carries the currency type. For `badge`, `data` carries the badge code. For `item`, `data` carries the `items_base.id`. Other reward types keep `data` empty.
 
+`marketplace` and `hc_payday` can be native rows. In native mode the amounts come from existing server state:
+
+- `marketplace`: sold marketplace offers waiting for payout
+- `hc_payday`: unclaimed rows in `logs_hc_payday`
+
 ## Result Status
 
 - `success`

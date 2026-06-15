@@ -122,6 +122,44 @@ class EarningsCenterManagerTest {
     }
 
     @Test
+    void nativeMarketplaceRowsUseNativeClaimInsteadOfPeriodicClaimLedger() {
+        TestConfig config = enabledConfig().with("earnings.marketplace.native.enabled", "1");
+        TestClaims claims = new TestClaims();
+        TestNativeIntegration nativeIntegration = new TestNativeIntegration(EarningsCategory.MARKETPLACE)
+                .withReward(new EarningsReward(EarningsReward.TYPE_CREDITS, 45, 0));
+        EarningsCenterManager manager = new EarningsCenterManager(config, claims, new TestRewards(), nativeIntegration, FIXED_CLOCK);
+
+        EarningsEntry entry = manager.getEntries(null).stream()
+                .filter(current -> current.getCategory() == EarningsCategory.MARKETPLACE)
+                .findFirst()
+                .orElseThrow();
+        EarningsClaimResult result = manager.claim(null, "marketplace");
+
+        assertTrue(entry.isClaimable());
+        assertEquals(45, entry.getRewards().getFirst().getAmount());
+        assertEquals(EarningsClaimResult.Status.SUCCESS, result.getStatus());
+        assertEquals(1, nativeIntegration.claims);
+        assertTrue(claims.claims.isEmpty());
+    }
+
+    @Test
+    void nativeRowsWithoutAvailableRewardsAreNotClaimable() {
+        TestConfig config = enabledConfig().with("earnings.hc_payday.native.enabled", "1");
+        TestNativeIntegration nativeIntegration = new TestNativeIntegration(EarningsCategory.HC_PAYDAY);
+        EarningsCenterManager manager = new EarningsCenterManager(config, new TestClaims(), new TestRewards(), nativeIntegration, FIXED_CLOCK);
+
+        EarningsEntry entry = manager.getEntries(null).stream()
+                .filter(current -> current.getCategory() == EarningsCategory.HC_PAYDAY)
+                .findFirst()
+                .orElseThrow();
+        EarningsClaimResult result = manager.claim(null, "hc_payday");
+
+        assertFalse(entry.isClaimable());
+        assertEquals(EarningsClaimResult.Status.NO_REWARD, result.getStatus());
+        assertEquals(0, nativeIntegration.claims);
+    }
+
+    @Test
     void claimAllGrantsClaimableRowsAndSkipsAlreadyClaimedRows() throws SQLException {
         TestConfig config = enabledConfig()
                 .with("earnings.daily_gift.credits", "10")
@@ -197,6 +235,47 @@ class EarningsCenterManagerTest {
         @Override
         public void grant(com.eu.habbo.habbohotel.users.Habbo habbo, List<EarningsReward> rewards) {
             this.granted.addAll(rewards);
+        }
+    }
+
+    private static class TestNativeIntegration implements EarningsCenterManager.NativeIntegration {
+        private final EarningsCategory category;
+        private final List<EarningsReward> rewards = new ArrayList<>();
+        private int claims = 0;
+
+        private TestNativeIntegration(EarningsCategory category) {
+            this.category = category;
+        }
+
+        private TestNativeIntegration withReward(EarningsReward reward) {
+            this.rewards.add(reward);
+            return this;
+        }
+
+        @Override
+        public boolean handles(EarningsCategory category) {
+            return this.category == category;
+        }
+
+        @Override
+        public boolean hasClaim(com.eu.habbo.habbohotel.users.Habbo habbo, EarningsCategory category) {
+            return handles(category) && !this.rewards.isEmpty();
+        }
+
+        @Override
+        public List<EarningsReward> rewards(com.eu.habbo.habbohotel.users.Habbo habbo, EarningsCategory category) {
+            return handles(category) ? List.copyOf(this.rewards) : List.of();
+        }
+
+        @Override
+        public boolean claim(com.eu.habbo.habbohotel.users.Habbo habbo, EarningsCategory category) {
+            if (!hasClaim(habbo, category)) {
+                return false;
+            }
+
+            this.claims++;
+            this.rewards.clear();
+            return true;
         }
     }
 }

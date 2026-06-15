@@ -113,3 +113,15 @@ INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
 ('earnings.club_job.item_id', '0', 'Items base id granted by club and job earnings claims.'),
 ('earnings.club_job.item.quantity', '1', 'Furni quantity granted by club and job earnings claims.'),
 ('earnings.club_job.hc.days', '0', 'HC days granted by club and job earnings claims.');
+
+INSERT IGNORE INTO `emulator_settings` (`key`, `value`, `comment`) VALUES
+('earnings.daily_gift.native.enabled', '0', 'Use native hotel subsystem data for daily gift earnings claims when available.'),
+('earnings.games.native.enabled', '0', 'Use native hotel subsystem data for games earnings claims when available.'),
+('earnings.achievements.native.enabled', '0', 'Use native hotel subsystem data for achievements earnings claims when available.'),
+('earnings.marketplace.native.enabled', '1', 'Use marketplace sold item payouts for marketplace earnings claims.'),
+('earnings.hc_payday.native.enabled', '1', 'Use unclaimed HC payday logs for HC payday earnings claims.'),
+('earnings.level_progress.native.enabled', '0', 'Use native hotel subsystem data for level progress earnings claims when available.'),
+('earnings.donations.native.enabled', '0', 'Use native hotel subsystem data for donations earnings claims when available.'),
+('earnings.bonus_bag.native.enabled', '0', 'Use native hotel subsystem data for bonus bag earnings claims when available.'),
+('earnings.mystery_boxes.native.enabled', '0', 'Use native hotel subsystem data for mystery boxes earnings claims when available.'),
+('earnings.club_job.native.enabled', '0', 'Use native hotel subsystem data for club and job earnings claims when available.');

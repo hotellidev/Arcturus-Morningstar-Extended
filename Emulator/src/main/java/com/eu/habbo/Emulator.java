@@ -517,6 +517,7 @@ public final class Emulator {
             Emulator.config.register(prefix + "item_id", "0");
             Emulator.config.register(prefix + "item.quantity", "1");
             Emulator.config.register(prefix + "hc.days", "0");
+            Emulator.config.register(prefix + "native.enabled", (category.equals("marketplace") || category.equals("hc_payday")) ? "1" : "0");
         }
     }
 
