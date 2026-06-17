@@ -10,17 +10,15 @@ import com.eu.habbo.habbohotel.wired.core.WiredManager;
 import com.eu.habbo.habbohotel.wired.core.WiredContext;
 import com.eu.habbo.habbohotel.wired.core.WiredSourceUtil;
 import com.eu.habbo.messages.ServerMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
 public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WiredConditionHabboHasHandItem.class);
     protected static final int QUANTIFIER_ALL = 0;
     protected static final int QUANTIFIER_ANY = 1;
+    protected static final int MAX_HAND_ITEM_ID = 10_000;
 
     public static final WiredConditionType type = WiredConditionType.ACTOR_HAS_HANDITEM;
 
@@ -64,7 +62,7 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
         if(settings.getIntParams().length < 1) return false;
         this.handItem = this.normalizeHandItem(settings.getIntParams()[0]);
         int[] params = settings.getIntParams();
-        this.userSource = (params.length > 1) ? params[1] : WiredSourceUtil.SOURCE_TRIGGER;
+        this.userSource = (params.length > 1) ? this.normalizeUserSource(params[1]) : WiredSourceUtil.SOURCE_TRIGGER;
         this.quantifier = (params.length > 2) ? this.normalizeQuantifier(params[2]) : QUANTIFIER_ALL;
 
         return true;
@@ -99,13 +97,21 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
-        try {
-            String wiredData = set.getString("wired_data");
+        this.onPickUp();
+        String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
+        try {
             if (wiredData.startsWith("{")) {
                 JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                if (data == null) {
+                    return;
+                }
+
                 this.handItem = this.normalizeHandItem(data.handItemId);
-                this.userSource = data.userSource;
+                this.userSource = this.normalizeUserSource(data.userSource);
                 this.quantifier = this.normalizeQuantifier(data.quantifier);
             } else {
                 this.handItem = this.normalizeHandItem(Integer.parseInt(wiredData));
@@ -113,7 +119,7 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
                 this.quantifier = QUANTIFIER_ALL;
             }
         } catch (Exception e) {
-            LOGGER.error("Caught exception", e);
+            this.onPickUp();
         }
     }
 
@@ -157,11 +163,15 @@ public class WiredConditionHabboHasHandItem extends InteractionWiredCondition {
     }
 
     protected int normalizeHandItem(int value) {
-        return Math.max(0, value);
+        return Math.max(0, Math.min(MAX_HAND_ITEM_ID, value));
     }
 
     protected int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    protected int normalizeUserSource(int value) {
+        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
     }
 
     static class JsonData {
