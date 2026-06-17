@@ -251,12 +251,13 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
         this.items.clear();
         String wiredData = set.getString("wired_data");
 
-        if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            this.setDelay(data.delay);
-            this.toggleType = normalizeToggleType(data.toggleType);
-            this.furniSource = data.furniSource;
-            for (Integer id: data.itemIds) {
+        JsonData jsonData = WiredMovementPayloadGuard.fromJson(wiredData, JsonData.class);
+        if (jsonData != null) {
+            this.setDelay(WiredMovementPayloadGuard.delay(jsonData.delay));
+            this.toggleType = normalizeToggleType(jsonData.toggleType);
+            this.furniSource = WiredMovementPayloadGuard.furniSource(jsonData.furniSource);
+            if (jsonData.itemIds != null) for (Integer id: jsonData.itemIds) {
+                if (id == null) continue;
                 HabboItem item = room.getHabboItem(id);
 
                 if (item instanceof InteractionFreezeBlock || item instanceof InteractionFreezeTile || item instanceof InteractionCrackable) {
@@ -271,15 +272,16 @@ public class WiredEffectToggleFurni extends InteractionWiredEffect {
                 this.furniSource = WiredSourceUtil.SOURCE_SELECTED;
             }
         } else {
-            String[] wiredDataOld = wiredData.split("\t");
+            String[] wiredDataOld = wiredData != null ? wiredData.split("\t") : new String[0];
 
             if (wiredDataOld.length >= 1) {
-                this.setDelay(Integer.parseInt(wiredDataOld[0]));
+                this.setDelay(WiredMovementPayloadGuard.parseDelay(wiredDataOld[0]));
             }
             if (wiredDataOld.length == 2) {
                 if (wiredDataOld[1].contains(";")) {
                     for (String s : wiredDataOld[1].split(";")) {
-                        HabboItem item = room.getHabboItem(Integer.parseInt(s));
+                        int itemId = WiredMovementPayloadGuard.parseInt(s, 0);
+                        HabboItem item = itemId > 0 ? room.getHabboItem(itemId) : null;
 
                         if (item instanceof InteractionFreezeBlock || item instanceof InteractionFreezeTile || item instanceof InteractionCrackable)
                             continue;
