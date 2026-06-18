@@ -79,6 +79,7 @@ public class WiredConditionDateRangeActive extends InteractionWiredCondition {
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
         if (wiredData == null || wiredData.isEmpty()) {
             this.applyRange(0, 0);
