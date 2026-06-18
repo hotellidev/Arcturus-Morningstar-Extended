@@ -115,6 +115,10 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
 
     @Override
     public boolean evaluate(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         this.refresh();
 
         if (this.settings.isEmpty())
@@ -128,6 +132,10 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
     }
 
     protected boolean evaluateAllTargetsMatch(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         Room room = ctx.room();
 
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
@@ -161,6 +169,10 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
     }
 
     protected boolean evaluateAnyTargetMatches(WiredContext ctx) {
+        if (ctx == null || ctx.room() == null) {
+            return false;
+        }
+
         Room room = ctx.room();
 
         if (this.furniSource != WiredSourceUtil.SOURCE_SELECTED) {
@@ -249,10 +261,25 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
 
     @Override
     public void loadWiredData(ResultSet set, Room room) throws SQLException {
+        this.onPickUp();
         String wiredData = set.getString("wired_data");
+        if (wiredData == null || wiredData.isEmpty()) {
+            return;
+        }
 
         if (wiredData.startsWith("{")) {
-            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            JsonData data;
+            try {
+                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            } catch (RuntimeException exception) {
+                this.onPickUp();
+                return;
+            }
+
+            if (data == null) {
+                return;
+            }
+
             this.state = data.state;
             this.position = data.position;
             this.direction = data.direction;
@@ -323,8 +350,56 @@ public class WiredConditionMatchStatePosition extends InteractionWiredCondition 
         this.quantifier = QUANTIFIER_ALL;
     }
 
-    private int normalizeQuantifier(int value) {
+    int normalizeQuantifier(int value) {
         return (value == QUANTIFIER_ANY) ? QUANTIFIER_ANY : QUANTIFIER_ALL;
+    }
+
+    int normalizeFurniSource(int value) {
+        switch (value) {
+            case WiredSourceUtil.SOURCE_TRIGGER:
+            case WiredSourceUtil.SOURCE_SELECTED:
+            case WiredSourceUtil.SOURCE_SELECTOR:
+            case WiredSourceUtil.SOURCE_SIGNAL:
+                return value;
+            default:
+                return WiredSourceUtil.SOURCE_TRIGGER;
+        }
+    }
+
+    WiredMatchFurniSetting normalizeSetting(WiredMatchFurniSetting setting) {
+        if (setting == null || setting.item_id <= 0) {
+            return null;
+        }
+
+        int rotation = Math.max(0, Math.min(7, setting.rotation));
+        int x = Math.max(0, setting.x);
+        int y = Math.max(0, setting.y);
+        double z = Math.max(0.0D, Math.min(Room.MAXIMUM_FURNI_HEIGHT, setting.z));
+
+        return new WiredMatchFurniSetting(setting.item_id, setting.state, rotation, x, y, z);
+    }
+
+    WiredMatchFurniSetting parseLegacySetting(String[] values) {
+        if (values == null || values.length < 5) {
+            return null;
+        }
+
+        try {
+            int itemId = Integer.parseInt(values[0]);
+            if (itemId <= 0) {
+                return null;
+            }
+
+            String state = values[1];
+            int rotation = Integer.parseInt(values[2]);
+            int x = Integer.parseInt(values[3]);
+            int y = Integer.parseInt(values[4]);
+            double z = values.length >= 6 ? Double.parseDouble(values[5]) : 0.0D;
+
+            return this.normalizeSetting(new WiredMatchFurniSetting(itemId, state, rotation, x, y, z));
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 
     protected void refresh() {
