@@ -68,29 +68,18 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
         }
 
         if (wiredData.startsWith("{")) {
-            JsonData data;
-            try {
-                data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-            } catch (RuntimeException exception) {
-                this.onPickUp();
-                return;
-            }
+            JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+            this.applyLimits(data.lowerLimit, data.upperLimit);
+            this.userSource = WiredConditionInputGuard.normalizeUserSource(data.userSource);
+        } else {
+            String[] data = wiredData.split(":");
 
-            if (data == null) {
-                return;
-            }
-
-            this.setLimits(data.lowerLimit, data.upperLimit);
-            this.userSource = this.normalizeUserSource(data.userSource);
-            return;
-        }
-
-        String[] data = wiredData.split(":");
-        if (data.length >= 2) {
-            try {
-                this.setLimits(Integer.parseInt(data[0].trim()), Integer.parseInt(data[1].trim()));
-            } catch (NumberFormatException ignored) {
-                this.onPickUp();
+            if (data.length >= 2) {
+                try {
+                    this.applyLimits(Integer.parseInt(data[0].trim()), Integer.parseInt(data[1].trim()));
+                } catch (NumberFormatException ignored) {
+                    // malformed legacy data — keep the constructed defaults
+                }
             }
         }
         this.userSource = WiredSourceUtil.SOURCE_TRIGGER;
@@ -128,34 +117,18 @@ public class WiredConditionHabboCount extends InteractionWiredCondition {
 
     @Override
     public boolean saveData(WiredSettings settings) {
-        if (settings.getIntParams().length < 2) return false;
+        if(settings.getIntParams().length < 2) return false;
         int[] params = settings.getIntParams();
-        this.setLimits(params[0], params[1]);
-        this.userSource = (params.length > 2) ? this.normalizeUserSource(params[2]) : WiredSourceUtil.SOURCE_TRIGGER;
+        this.applyLimits(params[0], params[1]);
+        this.userSource = (params.length > 2) ? WiredConditionInputGuard.normalizeUserSource(params[2]) : WiredSourceUtil.SOURCE_TRIGGER;
 
         return true;
     }
 
-    void setLimits(int lowerLimit, int upperLimit) {
-        int normalizedLower = this.normalizeLimit(lowerLimit);
-        int normalizedUpper = this.normalizeLimit(upperLimit);
-
-        if (normalizedLower > normalizedUpper) {
-            this.lowerLimit = normalizedUpper;
-            this.upperLimit = normalizedLower;
-            return;
-        }
-
-        this.lowerLimit = normalizedLower;
-        this.upperLimit = normalizedUpper;
-    }
-
-    int normalizeLimit(int value) {
-        return Math.max(0, Math.min(MAX_USER_COUNT_LIMIT, value));
-    }
-
-    int normalizeUserSource(int value) {
-        return WiredSourceUtil.isDefaultUserSource(value) ? value : WiredSourceUtil.SOURCE_TRIGGER;
+    private void applyLimits(int lowerLimit, int upperLimit) {
+        int[] limits = WiredConditionInputGuard.normalizeUserCountRange(lowerLimit, upperLimit);
+        this.lowerLimit = limits[0];
+        this.upperLimit = limits[1];
     }
 
     static class JsonData {
