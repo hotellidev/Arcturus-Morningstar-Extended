@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredTimerInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -29,9 +30,9 @@ import java.util.List;
  */
 public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
     private static final WiredTriggerType type = WiredTriggerType.AT_GIVEN_TIME;
-    static final int DEFAULT_EXECUTE_TIME = 20 * 500;
-    static final int MIN_EXECUTE_TIME = 500;
-    static final int MAX_EXECUTE_TIME = 60 * 60 * 1000;
+    private static final int STEP_MS = 500;
+    private static final int MIN_DELAY = STEP_MS;
+    private static final int LEGACY_FALLBACK_DELAY = 20 * STEP_MS;
     
     /** The time in milliseconds until the trigger fires */
     private int executeTime;
@@ -72,34 +73,24 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
         String wiredData = set.getString("wired_data");
         this.executeTime = parseExecuteTime(wiredData);
 
+        Integer storedExecuteTime = null;
+        try {
+            if (wiredData != null && wiredData.startsWith("{")) {
+                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
+                storedExecuteTime = data != null ? data.executeTime : null;
+            } else if (wiredData != null && wiredData.length() >= 1) {
+                storedExecuteTime = Integer.parseInt(wiredData);
+            }
+        } catch (RuntimeException ignored) {
+            storedExecuteTime = null;
+        }
+    }
+
+        this.executeTime = WiredTimerInputGuard.normalizeStoredMillis(storedExecuteTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
+        
         // Initialize for tick system
         this.accumulatedTime = 0;
         this.hasFired = false;
-    }
-
-    static int parseExecuteTime(String wiredData) {
-        if (wiredData == null || wiredData.isBlank()) {
-            return DEFAULT_EXECUTE_TIME;
-        }
-
-        try {
-            if (wiredData.startsWith("{")) {
-                JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-                return clampExecuteTime(data != null ? data.executeTime : DEFAULT_EXECUTE_TIME);
-            }
-
-            return clampExecuteTime(Integer.parseInt(wiredData));
-        } catch (RuntimeException e) {
-            return DEFAULT_EXECUTE_TIME;
-        }
-    }
-
-    static int clampExecuteTime(int executeTime) {
-        if (executeTime < MIN_EXECUTE_TIME) {
-            return DEFAULT_EXECUTE_TIME;
-        }
-
-        return Math.min(executeTime, MAX_EXECUTE_TIME);
     }
 
     @Override
@@ -150,7 +141,7 @@ public class WiredTriggerAtTimeLong extends InteractionWiredTrigger implements W
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.executeTime = clampExecuteTime(safeMultiply(settings.getIntParams()[0], MIN_EXECUTE_TIME));
+        this.executeTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY);
         
         this.resetTimer();
 

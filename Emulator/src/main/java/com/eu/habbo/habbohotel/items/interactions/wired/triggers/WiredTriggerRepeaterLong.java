@@ -4,6 +4,7 @@ import com.eu.habbo.habbohotel.items.Item;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredEffect;
 import com.eu.habbo.habbohotel.items.interactions.InteractionWiredTrigger;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredSettings;
+import com.eu.habbo.habbohotel.items.interactions.wired.WiredTimerInputGuard;
 import com.eu.habbo.habbohotel.items.interactions.wired.WiredTriggerReset;
 import com.eu.habbo.habbohotel.rooms.Room;
 import com.eu.habbo.habbohotel.rooms.RoomUnit;
@@ -29,8 +30,9 @@ import java.util.List;
  */
 public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements WiredTickable, WiredTriggerReset {
     public static final int DEFAULT_DELAY = 10 * 5000; // 50 seconds default
-    static final int MIN_DELAY = 5000;
-    static final int MAX_DELAY = 60 * 60 * 1000;
+    private static final int STEP_MS = 5000;
+    private static final int MIN_DELAY = STEP_MS;
+    private static final int LEGACY_FALLBACK_DELAY = 20 * STEP_MS;
     private static final WiredTriggerType type = WiredTriggerType.PERIODICALLY_LONG;
     
     /** The interval in milliseconds between triggers */
@@ -67,29 +69,20 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
         this.repeatTime = parseRepeatTime(wiredData);
     }
 
-    static int parseRepeatTime(String wiredData) {
-        if (wiredData == null || wiredData.isBlank()) {
-            return DEFAULT_DELAY;
-        }
-
+        Integer storedRepeatTime = null;
         try {
-            if (wiredData.startsWith("{")) {
+            if (wiredData != null && wiredData.startsWith("{")) {
                 JsonData data = WiredManager.getGson().fromJson(wiredData, JsonData.class);
-                return clampRepeatTime(data != null ? data.repeatTime : DEFAULT_DELAY);
+                storedRepeatTime = data != null ? data.repeatTime : null;
+            } else if (wiredData != null && wiredData.length() >= 1) {
+                storedRepeatTime = Integer.parseInt(wiredData);
             }
-
-            return clampRepeatTime(Integer.parseInt(wiredData));
-        } catch (RuntimeException e) {
-            return DEFAULT_DELAY;
+        } catch (RuntimeException ignored) {
+            storedRepeatTime = null;
         }
     }
 
-    static int clampRepeatTime(int repeatTime) {
-        if (repeatTime < MIN_DELAY) {
-            return DEFAULT_DELAY;
-        }
-
-        return Math.min(repeatTime, MAX_DELAY);
+        this.repeatTime = WiredTimerInputGuard.normalizeStoredMillis(storedRepeatTime, MIN_DELAY, LEGACY_FALLBACK_DELAY);
     }
 
     @Override
@@ -138,7 +131,7 @@ public class WiredTriggerRepeaterLong extends InteractionWiredTrigger implements
     @Override
     public boolean saveData(WiredSettings settings) {
         if (settings.getIntParams().length < 1) return false;
-        this.repeatTime = clampRepeatTime(safeMultiply(settings.getIntParams()[0], MIN_DELAY));
+        this.repeatTime = WiredTimerInputGuard.fromClientUnits(settings.getIntParams()[0], STEP_MS, MIN_DELAY);
         // No accumulated time reset needed - using global tick count
         return true;
     }
