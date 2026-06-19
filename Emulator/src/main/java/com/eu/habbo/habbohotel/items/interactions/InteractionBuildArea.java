@@ -12,7 +12,6 @@ import com.eu.habbo.habbohotel.users.HabboItem;
 import com.eu.habbo.habbohotel.users.HabboManager;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
@@ -22,10 +21,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class InteractionBuildArea extends InteractionCustomValues {
-    public static THashMap<String, String> defaultValues = new THashMap<String, String>() {
+    public static Map<String, String> defaultValues = new HashMap<String, String>() {
         {
             this.put("tilesLeft", "0");
         }
@@ -178,7 +179,7 @@ public class InteractionBuildArea extends InteractionCustomValues {
     }
 
     @Override
-    public void onCustomValuesSaved(Room room, GameClient client, THashMap<String, String> oldValues) {
+    public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {
         regenAffectedTiles(room);
         ArrayList<String> builderNames = new ArrayList<>(Arrays.asList(this.values.get("builders").split(";")));
         THashSet<Integer> canBuild = new THashSet<>();

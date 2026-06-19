@@ -11,7 +11,6 @@ import com.eu.habbo.habbohotel.wired.WiredEffectType;
 import com.eu.habbo.messages.outgoing.rooms.items.ItemExtraDataComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RemoveFloorItemComposer;
 import com.eu.habbo.messages.outgoing.rooms.items.RoomFloorItemsComposer;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
@@ -19,9 +18,11 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class InteractionMuteArea extends InteractionCustomValues {
-    public static THashMap<String, String> defaultValues = new THashMap<String, String>() {
+    public static Map<String, String> defaultValues = new HashMap<String, String>() {
         {
             this.put("tilesLeft", "0");
         }
@@ -124,7 +125,7 @@ public class InteractionMuteArea extends InteractionCustomValues {
     }
 
     @Override
-    public void onCustomValuesSaved(Room room, GameClient client, THashMap<String, String> oldValues) {
+    public void onCustomValuesSaved(Room room, GameClient client, Map<String, String> oldValues) {
         super.onCustomValuesSaved(room, client, oldValues);
 
         this.regenAffectedTiles(room);
