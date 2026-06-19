@@ -33,7 +33,6 @@ import com.eu.habbo.plugin.events.furniture.wired.WiredStackTriggeredEvent;
 import com.eu.habbo.plugin.events.users.UserWiredRewardReceived;
 import com.eu.habbo.habbohotel.wired.core.WiredExecutionOrderUtil;
 import com.google.gson.GsonBuilder;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +47,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 
 public class WiredHandler {
@@ -241,8 +241,8 @@ public class WiredHandler {
                 return false;
             }
 
-            THashSet<InteractionWiredEffect> legacyEffects = new THashSet<>(effects);
-            THashSet<InteractionWiredCondition> legacyConditions = new THashSet<>(conditions);
+            Set<InteractionWiredEffect> legacyEffects = new HashSet<>(effects);
+            Set<InteractionWiredCondition> legacyConditions = new HashSet<>(conditions);
 
             if (Emulator.getPluginManager().fireEvent(new WiredStackTriggeredEvent(room, roomUnit, trigger, legacyEffects, legacyConditions)).isCancelled())
                 return false;

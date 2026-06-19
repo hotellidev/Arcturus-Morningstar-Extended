@@ -20,7 +20,6 @@ import com.eu.habbo.plugin.events.users.UserDisconnectEvent;
 import com.eu.habbo.plugin.events.users.UserGetIPAddressEvent;
 import com.eu.habbo.plugin.events.users.UserPointsEvent;
 import it.unimi.dsi.fastutil.ints.IntCollection;
-import gnu.trove.set.hash.THashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
