@@ -14,22 +14,20 @@ import com.eu.habbo.habbohotel.rooms.RoomRightLevels;
 import com.eu.habbo.messages.outgoing.rooms.users.RoomUserTypingComposer;
 import com.eu.habbo.plugin.events.users.UserCommandEvent;
 import com.eu.habbo.plugin.events.users.UserExecuteCommandEvent;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.hash.THashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 public class CommandHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CommandHandler.class);
 
-    private final static THashMap<String, Command> commands = new THashMap<>(5);
+    private final static Map<String, Command> commands = new HashMap<>(5);
     private static final Comparator<Command> ALPHABETICAL_ORDER = new Comparator<Command>() {
         public int compare(Command c1, Command c2) {
             int res = String.CASE_INSENSITIVE_ORDER.compare(c1.permission, c2.permission);
@@ -116,17 +114,7 @@ public class CommandHandler {
                     if (room.getCurrentPets().isEmpty())
                         return false;
 
-                    TIntObjectIterator<Pet> petIterator = room.getCurrentPets().iterator();
-
-                    for (int j = room.getCurrentPets().size(); j-- > 0; ) {
-                        try {
-                            petIterator.advance();
-                        } catch (NoSuchElementException e) {
-                            break;
-                        }
-
-                        Pet pet = petIterator.value();
-
+                    for (Pet pet : room.getCurrentPets().valueCollection()) {
                         if (pet != null) {
                             if (pet.getName().equalsIgnoreCase(args[0])) {
                                 StringBuilder s = new StringBuilder();
