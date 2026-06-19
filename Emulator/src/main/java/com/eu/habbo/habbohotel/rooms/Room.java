@@ -2676,7 +2676,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void refreshGuild(Guild guild) {
     if (guild.getRoomId() == this.id) {
-      THashSet<GuildMember> members = Emulator.getGameEnvironment().getGuildManager()
+      Set<GuildMember> members = Emulator.getGameEnvironment().getGuildManager()
               .getGuildMembers(guild.getId());
 
       for (Habbo habbo : this.getHabbos()) {
