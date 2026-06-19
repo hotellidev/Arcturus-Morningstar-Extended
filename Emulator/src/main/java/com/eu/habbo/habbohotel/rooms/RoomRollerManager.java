@@ -50,10 +50,9 @@ public class RoomRollerManager {
         THashSet<Integer> rollerFurniIds = new THashSet<>();
         THashSet<Integer> rolledUnitIds = new THashSet<>();
 
-        this.room.getRoomSpecialTypes().getRollers().forEachValue(roller -> {
+        for (InteractionRoller roller : this.room.getRoomSpecialTypes().getRollers().values()) {
             processRoller(roller, messages, rollerFurniIds, rolledUnitIds, updatedUnit);
-            return true;
-        });
+        }
 
         // Process pyramids
         int currentTime = (int) (cycleTimestamp / 1000);
