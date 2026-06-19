@@ -1039,30 +1039,15 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
           this.sendComposer(new HotelViewComposer().compose());
 
           // Save bots BEFORE clearing - must happen before unitManager.clear()
-          TIntObjectIterator<Bot> botIterator = this.getCurrentBots().iterator();
-
-          for (int i = this.getCurrentBots().size(); i-- > 0; ) {
-            try {
-              botIterator.advance();
-              botIterator.value().needsUpdate(true);
-              botIterator.value().run();  // Run synchronously to ensure DB is updated before room reload
-            } catch (NoSuchElementException e) {
-              LOGGER.error("Caught exception", e);
-              break;
-            }
+          for (Bot bot : this.getCurrentBots().values()) {
+            bot.needsUpdate(true);
+            bot.run();  // Run synchronously to ensure DB is updated before room reload
           }
 
           // Save ALL remaining pets (including owner's pets) BEFORE clearing
-          TIntObjectIterator<Pet> petIterator = this.getCurrentPets().iterator();
-          for (int i = this.getCurrentPets().size(); i-- > 0; ) {
-            try {
-              petIterator.advance();
-              petIterator.value().needsUpdate = true;
-              petIterator.value().run();  // Run synchronously to ensure DB is updated before room reload
-            } catch (NoSuchElementException e) {
-              LOGGER.error("Caught exception", e);
-              break;
-            }
+          for (Pet pet : this.getCurrentPets().values()) {
+            pet.needsUpdate = true;
+            pet.run();  // Run synchronously to ensure DB is updated before room reload
           }
 
           this.unitManager.clear();
@@ -1772,7 +1757,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.unitManager.getHabbos();
   }
 
-  public TIntObjectMap<Habbo> getHabboQueue() {
+  public Int2ObjectMap<Habbo> getHabboQueue() {
     return this.unitManager.getHabboQueue();
   }
 
@@ -1816,11 +1801,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return true;
   }
 
-  public TIntObjectMap<Bot> getCurrentBots() {
+  public Int2ObjectMap<Bot> getCurrentBots() {
     return this.unitManager.getCurrentBots();
   }
 
-  public TIntObjectMap<Pet> getCurrentPets() {
+  public Int2ObjectMap<Pet> getCurrentPets() {
     return this.unitManager.getCurrentPets();
   }
 
@@ -1986,35 +1971,35 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.unitManager.hasPetsAt(x, y);
   }
 
-  public THashSet<Bot> getBotsAt(RoomTile tile) {
+  public Set<Bot> getBotsAt(RoomTile tile) {
     return this.unitManager.getBotsAt(tile);
   }
 
-  public THashSet<Pet> getPetsAt(RoomTile tile) {
+  public Set<Pet> getPetsAt(RoomTile tile) {
     return this.unitManager.getPetsAt(tile);
   }
 
-  public THashSet<Habbo> getHabbosAt(short x, short y) {
+  public Set<Habbo> getHabbosAt(short x, short y) {
     return this.unitManager.getHabbosAt(x, y);
   }
 
-  public THashSet<Habbo> getHabbosAt(RoomTile tile) {
+  public Set<Habbo> getHabbosAt(RoomTile tile) {
     return this.unitManager.getHabbosAt(tile);
   }
 
-  public THashSet<RoomUnit> getHabbosAndBotsAt(short x, short y) {
+  public Set<RoomUnit> getHabbosAndBotsAt(short x, short y) {
     return this.unitManager.getHabbosAndBotsAt(x, y);
   }
 
-  public THashSet<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
+  public Set<RoomUnit> getHabbosAndBotsAt(RoomTile tile) {
     return this.unitManager.getHabbosAndBotsAt(tile);
   }
 
-  public THashSet<Habbo> getHabbosOnItem(HabboItem item) {
+  public Set<Habbo> getHabbosOnItem(HabboItem item) {
     return this.unitManager.getHabbosOnItem(item);
   }
 
-  public THashSet<Bot> getBotsOnItem(HabboItem item) {
+  public Set<Bot> getBotsOnItem(HabboItem item) {
     return this.unitManager.getBotsOnItem(item);
   }
 
@@ -2891,11 +2876,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
 
 
-  public THashSet<RoomUnit> getRoomUnits() {
+  public Set<RoomUnit> getRoomUnits() {
     return this.unitManager.getRoomUnits();
   }
 
-  public THashSet<RoomUnit> getRoomUnits(RoomTile atTile) {
+  public Set<RoomUnit> getRoomUnits(RoomTile atTile) {
     return this.unitManager.getRoomUnits(atTile);
   }
 

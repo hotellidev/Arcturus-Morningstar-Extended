@@ -114,7 +114,7 @@ public class CommandHandler {
                     if (room.getCurrentPets().isEmpty())
                         return false;
 
-                    for (Pet pet : room.getCurrentPets().valueCollection()) {
+                    for (Pet pet : room.getCurrentPets().values()) {
                         if (pet != null) {
                             if (pet.getName().equalsIgnoreCase(args[0])) {
                                 StringBuilder s = new StringBuilder();

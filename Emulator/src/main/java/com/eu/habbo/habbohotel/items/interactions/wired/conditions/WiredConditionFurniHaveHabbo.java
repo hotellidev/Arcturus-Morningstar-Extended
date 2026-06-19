@@ -63,8 +63,8 @@ public class WiredConditionFurniHaveHabbo extends InteractionWiredCondition {
             return false;
 
         Collection<Habbo> habbos = room.getHabbos();
-        Collection<Bot> bots = room.getCurrentBots().valueCollection();
-        Collection<Pet> pets = room.getCurrentPets().valueCollection();
+        Collection<Bot> bots = room.getCurrentBots().values();
+        Collection<Pet> pets = room.getCurrentPets().values();
 
         if (this.all) {
             return targets.stream().filter(item -> item != null).allMatch(item -> this.hasAvatarOnItem(item, room, habbos, bots, pets));

@@ -851,16 +851,9 @@ public class RoomManager {
         }
 
 
-        habbo.getClient().sendResponse(new RoomUsersComposer(room.getCurrentBots().valueCollection(), true));
+        habbo.getClient().sendResponse(new RoomUsersComposer(room.getCurrentBots().values(), true));
         if (!room.getCurrentBots().isEmpty()) {
-            TIntObjectIterator<Bot> botIterator = room.getCurrentBots().iterator();
-            for (int i = room.getCurrentBots().size(); i-- > 0; ) {
-                try {
-                    botIterator.advance();
-                } catch (NoSuchElementException e) {
-                    break;
-                }
-                Bot bot = botIterator.value();
+            for (Bot bot : room.getCurrentBots().values()) {
                 if (!bot.getRoomUnit().getDanceType().equals(DanceType.NONE)) {
                     habbo.getClient().sendResponse(new RoomUserDanceComposer(bot.getRoomUnit()));
                 }
@@ -913,8 +906,8 @@ public class RoomManager {
         habbo.getClient().sendResponse(new HanditemBlockStateComposer(room).compose());
 
         if (!room.getCurrentPets().isEmpty()) {
-            habbo.getClient().sendResponse(new RoomPetComposer(room.getCurrentPets().valueCollection()));
-            for (Pet pet : room.getCurrentPets().valueCollection()) {
+            habbo.getClient().sendResponse(new RoomPetComposer(room.getCurrentPets().values()));
+            for (Pet pet : room.getCurrentPets().values()) {
                 habbo.getClient().sendResponse(new RoomUserStatusComposer(pet.getRoomUnit()));
             }
         }
@@ -981,7 +974,7 @@ public class RoomManager {
 
         if (room.hasRights(habbo) || (room.hasGuild() && room.getGuildRightLevel(habbo).isEqualOrGreaterThan(RoomRightLevels.GUILD_RIGHTS))) {
             if (!room.getHabboQueue().isEmpty()) {
-                for (Habbo waiting : room.getHabboQueue().valueCollection()) {
+                for (Habbo waiting : room.getHabboQueue().values()) {
                     habbo.getClient().sendResponse(new DoorbellAddUserComposer(waiting.getHabboInfo().getUsername()));
                 }
             }

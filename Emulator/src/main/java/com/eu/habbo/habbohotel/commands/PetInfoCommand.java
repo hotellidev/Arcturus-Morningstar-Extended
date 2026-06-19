@@ -19,7 +19,7 @@ public class PetInfoCommand extends Command {
 
             String name = params[1];
 
-            for (Pet pet : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentPets().valueCollection()) {
+            for (Pet pet : gameClient.getHabbo().getHabboInfo().getCurrentRoom().getCurrentPets().values()) {
                 if (pet.getName().equalsIgnoreCase(name)) {
                     gameClient.getHabbo().alert("" +
                             Emulator.getTexts().getValue("commands.generic.cmd_pet_info.title") + ": " + pet.getName() + "\r\n" +

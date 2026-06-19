@@ -591,7 +591,7 @@ public class RoomChatManager {
      */
     private void notifyBots(RoomChatMessage roomChatMessage) {
         synchronized (this.room.getUnitManager().getCurrentBots()) {
-            for (Bot bot : this.room.getUnitManager().getCurrentBots().valueCollection()) {
+            for (Bot bot : this.room.getUnitManager().getCurrentBots().values()) {
                 try {
                     bot.onUserSay(roomChatMessage);
 

@@ -198,7 +198,7 @@ public class RoomBundleLayout extends SingleBundle {
                     synchronized (this.room.getCurrentBots()) {
                         statement.setInt(1, userId);
                         statement.setInt(2, roomId);
-                        for (Bot bot : this.room.getCurrentBots().valueCollection()) {
+                        for (Bot bot : this.room.getCurrentBots().values()) {
                             statement.setString(3, bot.getName());
                             statement.setString(4, bot.getMotto());
                             statement.setString(5, bot.getFigure());
