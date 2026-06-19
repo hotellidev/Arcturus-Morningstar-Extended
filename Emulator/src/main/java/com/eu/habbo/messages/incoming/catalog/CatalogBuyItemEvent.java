@@ -86,10 +86,10 @@ public class CatalogBuyItemEvent extends MessageHandler {
 
                 if (page instanceof RoomBundleLayout) {
                     final CatalogItem[] item = new CatalogItem[1];
-                    page.getCatalogItems().forEachValue(object -> {
+                    for (CatalogItem object : page.getCatalogItems().values()) {
                         item[0] = object;
-                        return false;
-                    });
+                        break;
+                    }
 
                     CatalogItem roomBundleItem = item[0];
                     if (roomBundleItem == null || roomBundleItem.getCredits() > this.client.getHabbo().getHabboInfo().getCredits() || roomBundleItem.getPoints() > this.client.getHabbo().getHabboInfo().getCurrencyAmount(roomBundleItem.getPointsType())) {
@@ -202,7 +202,7 @@ public class CatalogBuyItemEvent extends MessageHandler {
                 item = page.getCatalogItem(itemId);
 
             if (item == null && !(page instanceof RecentPurchasesLayout)) {
-                for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
+                for (CatalogItem candidate : page.getCatalogItems().values()) {
                     if (candidate != null && candidate.getOfferId() == itemId) {
                         item = candidate;
                         break;

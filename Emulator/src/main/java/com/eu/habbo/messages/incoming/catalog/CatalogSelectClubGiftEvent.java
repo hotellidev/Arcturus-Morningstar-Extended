@@ -41,7 +41,7 @@ public class CatalogSelectClubGiftEvent extends MessageHandler {
             return;
         }
 
-        CatalogItem catalogItem = page.getCatalogItems().valueCollection().stream().filter(x -> x.getName().equalsIgnoreCase(itemName)).findAny().orElse(null);
+        CatalogItem catalogItem = page.getCatalogItems().values().stream().filter(x -> x.getName().equalsIgnoreCase(itemName)).findAny().orElse(null);
 
         if(catalogItem == null) {
             LOGGER.error("Catalog item not found");

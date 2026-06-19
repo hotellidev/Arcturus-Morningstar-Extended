@@ -180,7 +180,7 @@ public class CatalogBuyItemAsGiftEvent extends MessageHandler {
                     // CatalogBuyItemEvent. Fall back to scanning the
                     // page for the matching offer_id.
                     if (item == null) {
-                        for (CatalogItem candidate : page.getCatalogItems().valueCollection()) {
+                        for (CatalogItem candidate : page.getCatalogItems().values()) {
                             if (candidate != null && candidate.getOfferId() == itemId) {
                                 item = candidate;
                                 break;
