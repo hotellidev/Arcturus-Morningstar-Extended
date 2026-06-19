@@ -38,15 +38,11 @@ import com.eu.habbo.plugin.events.furniture.FurniturePickedUpEvent;
 import com.eu.habbo.plugin.events.rooms.RoomLoadedEvent;
 import com.eu.habbo.plugin.events.rooms.RoomUnloadedEvent;
 import com.eu.habbo.plugin.events.rooms.RoomUnloadingEvent;
-import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.THashMap;
-import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +82,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public static final Comparator<Room> SORT_SCORE = (o1, o2) -> o2.getScore() - o1.getScore();
   public static final Comparator<Room> SORT_ID = (o1, o2) -> o2.getId() - o1.getId();
-  private static final TIntObjectHashMap<RoomMoodlightData> defaultMoodData = new TIntObjectHashMap<>();
+  private static final Int2ObjectMap<RoomMoodlightData> defaultMoodData = new Int2ObjectOpenHashMap<>();
   //Configuration. Loaded from database & updated accordingly.
   public static boolean HABBO_CHAT_DELAY = false;
   public static int MAXIMUM_BOTS = 10;
@@ -119,11 +115,11 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public final Object roomUnitLock = new Object();
   public final List<Integer> userVotes;
-  private final TIntArrayList rights;
-  private final TIntIntHashMap mutedHabbos;
-  private final TIntObjectHashMap<RoomBan> bannedHabbos;
+  private final IntList rights;
+  private final Int2IntMap mutedHabbos;
+  private final Int2ObjectMap<RoomBan> bannedHabbos;
   private final Set<Game> games;
-  private final TIntObjectMap<RoomMoodlightData> moodlightData;
+  private final Int2ObjectMap<RoomMoodlightData> moodlightData;
   public volatile double lastCycleCpuMs = 0.0;
   public volatile String lastCycleThread = "N/A";
 
@@ -228,10 +224,10 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.youtubePlaylist.clear();
   }
 
-  public final THashMap<String, Object> cache;
+  public final Map<String, Object> cache;
 
   public Room(ResultSet set) throws SQLException {
-    this.cache = new THashMap<>(1000);
+    this.cache = new HashMap<>(1000);
     this.id = set.getInt("id");
     this.ownerId = set.getInt("owner_id");
     this.ownerName = set.getString("owner_name");
@@ -287,7 +283,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
       this.buildersClubOriginalState = RoomState.OPEN;
     }
 
-    this.bannedHabbos = new TIntObjectHashMap<>();
+    this.bannedHabbos = new Int2ObjectOpenHashMap<>();
 
     try (Connection connection = Emulator.getDatabase().getDataSource().getConnection()) {
       // Load bans eagerly (needed for entry check before loadData)
@@ -303,17 +299,17 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.preLoaded = true;
     this.allowBotsWalk = true;
     this.allowEffects = true;
-    this.moodlightData = new TIntObjectHashMap<>(defaultMoodData);
+    this.moodlightData = new Int2ObjectOpenHashMap<>(defaultMoodData);
 
     for (String s : set.getString("moodlight_data").split(";")) {
       RoomMoodlightData data = RoomMoodlightData.fromString(s);
       this.moodlightData.put(data.getId(), data);
     }
 
-    this.mutedHabbos = new TIntIntHashMap();
+    this.mutedHabbos = new Int2IntOpenHashMap();
     this.games = ConcurrentHashMap.newKeySet();
 
-    this.rights = new TIntArrayList();
+    this.rights = new IntArrayList();
     this.userVotes = new ArrayList<>();
 
     // Initialize managers
@@ -1189,7 +1185,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
         StringBuilder moodLightData = new StringBuilder();
 
         int id = 1;
-        for (RoomMoodlightData data : this.moodlightData.valueCollection()) {
+        for (RoomMoodlightData data : this.moodlightData.values()) {
           data.setId(id);
           moodLightData.append(data.toString()).append(";");
           id++;
@@ -1769,7 +1765,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.itemManager.getFurniOwnerCount();
   }
 
-  public TIntObjectMap<RoomMoodlightData> getMoodlightData() {
+  public Int2ObjectMap<RoomMoodlightData> getMoodlightData() {
     return this.moodlightData;
   }
 
@@ -1832,7 +1828,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.needsUpdate = needsUpdate;
   }
 
-  public TIntArrayList getRights() {
+  public IntList getRights() {
     return this.rights;
   }
 
@@ -2369,7 +2365,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
 
   public void removeRights(int userId) {
     this.rightsManager.removeRights(userId);
-    this.rights.remove(userId);
+    this.rights.rem(userId);
     this.pushWiredSettingsToCurrentHabbos();
   }
 
@@ -2399,7 +2395,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     return this.rightsManager.isBanned(habbo);
   }
 
-  public TIntObjectHashMap<RoomBan> getBannedHabbos() {
+  public Int2ObjectMap<RoomBan> getBannedHabbos() {
     return this.bannedHabbos;
   }
 

@@ -23,7 +23,7 @@ public class RoomBannedUsersComposer extends MessageComposer {
 
         Set<RoomBan> roomBans = new HashSet<>();
 
-        for (RoomBan ban : this.room.getBannedHabbos().valueCollection()) {
+        for (RoomBan ban : this.room.getBannedHabbos().values()) {
             if (ban.endTimestamp > timeStamp)
                 roomBans.add(ban);
         }
