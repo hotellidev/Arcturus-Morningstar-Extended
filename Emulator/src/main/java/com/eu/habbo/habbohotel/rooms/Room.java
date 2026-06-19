@@ -849,7 +849,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     if (item.getBaseItem().getType() == FurnitureType.FLOOR) {
       this.sendComposer(new RemoveFloorItemComposer(item).compose());
 
-      THashSet<RoomTile> updatedTiles = new THashSet<>();
+      Set<RoomTile> updatedTiles = new HashSet<>();
       Rectangle rectangle = RoomLayout.getRectangle(item.getX(), item.getY(),
               item.getBaseItem().getWidth(), item.getBaseItem().getLength(), item.getRotation());
 
@@ -2069,7 +2069,7 @@ public class Room implements Comparable<Room>, ISerialize, Runnable {
     this.chatManager.talk(habbo, roomChatMessage, chatType, ignoreWired);
   }
 
-  public THashSet<RoomTile> getLockedTiles() {
+  public Set<RoomTile> getLockedTiles() {
     return this.itemManager.getLockedTiles();
   }
 

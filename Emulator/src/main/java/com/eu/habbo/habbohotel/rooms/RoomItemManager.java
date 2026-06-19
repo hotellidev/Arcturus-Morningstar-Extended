@@ -38,7 +38,6 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.hash.THashSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -1028,7 +1027,7 @@ public class RoomItemManager {
                 RoomHanditemBlockSupport.sendState(this.room);
             }
 
-            THashSet<RoomTile> updatedTiles = this.room.getLayout().getTilesAt(
+            Set<RoomTile> updatedTiles = this.room.getLayout().getTilesAt(
                     this.room.getLayout().getTile(item.getX(), item.getY()),
                     item.getBaseItem().getWidth(),
                     item.getBaseItem().getLength(),
@@ -1162,8 +1161,8 @@ public class RoomItemManager {
     /**
      * Gets all tiles that are locked by furniture.
      */
-    public THashSet<RoomTile> getLockedTiles() {
-        THashSet<RoomTile> lockedTiles = new THashSet<>();
+    public Set<RoomTile> getLockedTiles() {
+        Set<RoomTile> lockedTiles = new HashSet<>();
 
         TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -1366,7 +1365,7 @@ public class RoomItemManager {
         return null;
     }
 
-    private double getMinimumTileHeight(THashSet<RoomTile> occupiedTiles) {
+    private double getMinimumTileHeight(Set<RoomTile> occupiedTiles) {
         double minimumHeight = 0.0D;
 
         for (RoomTile occupiedTile : occupiedTiles) {
@@ -1376,7 +1375,7 @@ public class RoomItemManager {
         return minimumHeight;
     }
 
-    private double getConfiguredStackWalkHelperHeight(HabboItem item, THashSet<RoomTile> occupiedTiles) {
+    private double getConfiguredStackWalkHelperHeight(HabboItem item, Set<RoomTile> occupiedTiles) {
         double height = 0.0D;
 
         try {
@@ -1389,7 +1388,7 @@ public class RoomItemManager {
         return Math.max(height, this.getMinimumTileHeight(occupiedTiles));
     }
 
-    private double resolveStackWalkHelperHeight(HabboItem item, RoomTile tile, THashSet<RoomTile> occupiedTiles) {
+    private double resolveStackWalkHelperHeight(HabboItem item, RoomTile tile, Set<RoomTile> occupiedTiles) {
         HabboItem helper = this.findStackHeightHelperAt(tile, item);
         if (helper != null) {
             return Math.max(helper.getZ(), this.getMinimumTileHeight(occupiedTiles));
@@ -1408,7 +1407,7 @@ public class RoomItemManager {
             return FurnitureMovementError.NONE;
         }
 
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
         for (RoomTile t : occupiedTiles) {
             if (t.state == RoomTileState.INVALID) {
@@ -1460,7 +1459,7 @@ public class RoomItemManager {
             return FurnitureMovementError.NONE;
         }
 
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
         for (RoomTile t : occupiedTiles) {
             if (t.state == RoomTileState.INVALID) {
@@ -1523,7 +1522,7 @@ public class RoomItemManager {
         }
 
         RoomLayout layout = this.room.getLayout();
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
 
         FurnitureMovementError fits = furnitureFitsAt(tile, item, rotation);
@@ -1654,14 +1653,14 @@ public class RoomItemManager {
 
         boolean magicTile = this.isStackPlacementBypassItem(item);
 
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
                 tile,
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
                 rotation
         );
 
-        THashSet<RoomTile> oldOccupiedTiles = layout.getTilesAt(
+        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()),
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
@@ -1765,7 +1764,7 @@ public class RoomItemManager {
 
         // Preserve your newer "place under" behavior if enabled
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
-            THashSet<RoomTile> newOccupiedTiles = layout.getTilesAt(
+            Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
                     tile,
                     item.getBaseItem().getWidth(),
                     item.getBaseItem().getLength(),
@@ -1813,14 +1812,14 @@ public class RoomItemManager {
 
         boolean magicTile = this.isStackPlacementBypassItem(item);
 
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(
                 tile,
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
                 rotation
         );
 
-        THashSet<RoomTile> oldOccupiedTiles = layout.getTilesAt(
+        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()),
                 item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(),
@@ -1916,7 +1915,7 @@ public class RoomItemManager {
         }
 
         if (Emulator.getConfig().getBoolean("wired.place.under", false)) {
-            THashSet<RoomTile> newOccupiedTiles = layout.getTilesAt(
+            Set<RoomTile> newOccupiedTiles = layout.getTilesAt(
                     tile,
                     item.getBaseItem().getWidth(),
                     item.getBaseItem().getLength(),
@@ -1972,9 +1971,9 @@ public class RoomItemManager {
         HabboItem stackHelper = this.findStackHeightHelperAt(tile, item);
 
         // Check if can be placed at new position
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
-        THashSet<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
+        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
                 item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.getTopItemAt(occupiedTiles, null);
@@ -2018,7 +2017,7 @@ public class RoomItemManager {
             }
         }
 
-        THashSet<RoomTile> oldOccupiedTiles = layout.getTilesAt(
+        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()), item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), item.getRotation());
 
@@ -2180,9 +2179,9 @@ public class RoomItemManager {
 
         HabboItem stackHelper = this.findStackHeightHelperAt(tile, item);
 
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
-        THashSet<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
+        Set<RoomTile> newOccupiedTiles = layout.getTilesAt(tile,
                 item.getBaseItem().getWidth(), item.getBaseItem().getLength(), rotation);
 
         HabboItem topItem = this.getTopPhysicsItemAt(occupiedTiles, null, physics);
@@ -2221,7 +2220,7 @@ public class RoomItemManager {
             }
         }
 
-        THashSet<RoomTile> oldOccupiedTiles = layout.getTilesAt(
+        Set<RoomTile> oldOccupiedTiles = layout.getTilesAt(
                 layout.getTile(item.getX(), item.getY()), item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), item.getRotation());
 
@@ -2364,7 +2363,7 @@ public class RoomItemManager {
         RoomLayout layout = this.room.getLayout();
 
         // Check if can be placed at new position
-        THashSet<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
+        Set<RoomTile> occupiedTiles = layout.getTilesAt(tile, item.getBaseItem().getWidth(),
                 item.getBaseItem().getLength(), rotation);
 
         java.util.List<Pair<RoomTile, Set<HabboItem>>> tileFurniList = new java.util.ArrayList<>();
@@ -2437,7 +2436,7 @@ public class RoomItemManager {
         return FurnitureMovementError.NONE;
     }
 
-    private boolean hasBlockingPhysicsFurni(THashSet<RoomTile> occupiedTiles, HabboItem exclude, WiredMovementPhysics physics) {
+    private boolean hasBlockingPhysicsFurni(Set<RoomTile> occupiedTiles, HabboItem exclude, WiredMovementPhysics physics) {
         if (physics == null || !physics.hasBlockingFurni()) {
             return false;
         }
@@ -2496,7 +2495,7 @@ public class RoomItemManager {
         return highestItem;
     }
 
-    private HabboItem getTopPhysicsItemAt(THashSet<RoomTile> tiles, HabboItem exclude, WiredMovementPhysics physics) {
+    private HabboItem getTopPhysicsItemAt(Set<RoomTile> tiles, HabboItem exclude, WiredMovementPhysics physics) {
         HabboItem highestItem = null;
 
         for (RoomTile tile : tiles) {
@@ -2553,3 +2552,4 @@ public class RoomItemManager {
         return height;
     }
 }
+
