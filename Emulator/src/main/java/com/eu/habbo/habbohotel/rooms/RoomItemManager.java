@@ -47,6 +47,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -970,7 +971,7 @@ public class RoomItemManager {
      * Gets the unique furniture count for a user.
      */
     public int getUserUniqueFurniCount(int userId) {
-        THashSet<Item> items = new THashSet<>();
+        Set<Item> items = new HashSet<>();
 
         synchronized (this.roomItems) {
             for (HabboItem item : this.roomItems.valueCollection()) {
@@ -1051,8 +1052,8 @@ public class RoomItemManager {
      * Ejects all furniture belonging to a user.
      */
     public void ejectUserFurni(int userId) {
-        THashSet<HabboItem> items = new THashSet<>();
-        THashSet<HabboItem> inventoryItems = new THashSet<>();
+        Set<HabboItem> items = new HashSet<>();
+        Set<HabboItem> inventoryItems = new HashSet<>();
 
         TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
 
@@ -1105,7 +1106,7 @@ public class RoomItemManager {
      * Ejects all items from the room except those belonging to the specified Habbo.
      */
     public void ejectAll(Habbo habbo) {
-        THashMap<Integer, THashSet<HabboItem>> userItemsMap = new THashMap<>();
+        Map<Integer, Set<HabboItem>> userItemsMap = new HashMap<>();
 
         synchronized (this.roomItems) {
             TIntObjectIterator<HabboItem> iterator = this.roomItems.iterator();
@@ -1125,13 +1126,13 @@ public class RoomItemManager {
                     continue;
                 }
 
-                userItemsMap.computeIfAbsent(iterator.value().getUserId(), k -> new THashSet<>())
+                userItemsMap.computeIfAbsent(iterator.value().getUserId(), k -> new HashSet<>())
                         .add(iterator.value());
             }
         }
 
-        for (Map.Entry<Integer, THashSet<HabboItem>> entrySet : userItemsMap.entrySet()) {
-            THashSet<HabboItem> inventoryItems = new THashSet<>();
+        for (Map.Entry<Integer, Set<HabboItem>> entrySet : userItemsMap.entrySet()) {
+            Set<HabboItem> inventoryItems = new HashSet<>();
 
             for (HabboItem item : entrySet.getValue()) {
                 if (!BuildersClubRoomSupport.isTrackedItem(item.getId())) {
