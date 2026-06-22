@@ -429,6 +429,12 @@ public class RoomCycleManager {
     public boolean cycleRoomUnit(RoomUnit unit, RoomUnitType type) {
         boolean update = unit.needsStatusUpdate();
 
+        // A mounted rider must not sit or lay - that would draw the seated/laying pose on top of the
+        // horse. Block it (and clear any existing sit/lay) until the rider dismounts.
+        Habbo ridingHabbo = (type == RoomUnitType.USER) ? this.room.getHabbo(unit) : null;
+        boolean isRiding = ridingHabbo != null && ridingHabbo.getHabboInfo() != null
+                && ridingHabbo.getHabboInfo().getRiding() != null;
+
         if (unit.hasStatus(RoomUnitStatus.SIGN)) {
             this.room.sendComposer(new RoomUserStatusComposer(unit).compose());
             unit.removeStatus(RoomUnitStatus.SIGN);
@@ -454,7 +460,7 @@ public class RoomCycleManager {
                 RoomTile thisTile = this.room.getLayout().getTile(unit.getX(), unit.getY());
                 HabboItem topItem = this.room.getTallestChair(thisTile);
 
-                if (topItem == null || !topItem.getBaseItem().allowSit()) {
+                if (isRiding || topItem == null || !topItem.getBaseItem().allowSit()) {
                     if (unit.hasStatus(RoomUnitStatus.SIT)) {
                         unit.removeStatus(RoomUnitStatus.SIT);
                         update = true;
@@ -474,7 +480,7 @@ public class RoomCycleManager {
         if (!unit.isWalking() && !unit.cmdLay) {
             HabboItem topItem = this.room.getTopItemAt(unit.getX(), unit.getY());
 
-            if (topItem == null || !topItem.getBaseItem().allowLay()) {
+            if (isRiding || topItem == null || !topItem.getBaseItem().allowLay()) {
                 if (unit.hasStatus(RoomUnitStatus.LAY)) {
                     unit.removeStatus(RoomUnitStatus.LAY);
                     update = true;

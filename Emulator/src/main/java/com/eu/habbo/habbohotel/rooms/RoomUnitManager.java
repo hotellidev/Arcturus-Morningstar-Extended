@@ -250,14 +250,14 @@ public class RoomUnitManager {
             habbo.getRoomUnit().getCurrentLocation().removeUnit(habbo.getRoomUnit());
         }
 
-          synchronized (this.room.roomUnitLock) {
-              this.currentHabbos.remove(habbo.getHabboInfo().getId());
-          }
+        synchronized (this.room.roomUnitLock) {
+            this.currentHabbos.remove(habbo.getHabboInfo().getId());
+        }
 
-          this.room.getUserVariableManager().clearAssignmentsForUser(habbo.getHabboInfo().getId());
+        this.room.getUserVariableManager().clearAssignmentsForUser(habbo.getHabboInfo().getId());
 
-          if (sendRemovePacket && habbo.getRoomUnit() != null && !habbo.getRoomUnit().isTeleporting) {
-              this.room.sendComposer(new RoomUserRemoveComposer(habbo.getRoomUnit()).compose());
+        if (sendRemovePacket && habbo.getRoomUnit() != null && !habbo.getRoomUnit().isTeleporting) {
+            this.room.sendComposer(new RoomUserRemoveComposer(habbo.getRoomUnit()).compose());
         }
 
         if (habbo.getRoomUnit().getCurrentLocation() != null) {
@@ -390,7 +390,18 @@ public class RoomUnitManager {
             double z = habbo.getRoomUnit().getCurrentLocation().getStackHeight();
             boolean hadLayStatus = habbo.getRoomUnit().hasStatus(RoomUnitStatus.LAY);
 
-            if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)
+            boolean isRiding = habbo.getHabboInfo() != null && habbo.getHabboInfo().getRiding() != null;
+
+            if (isRiding) {
+                // A mounted rider never sits or lays - that would draw the seated/laying pose on top
+                // of the horse. Clear any sit/lay and leave the height to the riding logic.
+                if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
+                    habbo.getRoomUnit().removeStatus(RoomUnitStatus.SIT);
+                }
+                if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.LAY)) {
+                    habbo.getRoomUnit().removeStatus(RoomUnitStatus.LAY);
+                }
+            } else if (habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)
                     || (topItem != null && topItem.getBaseItem().allowSit())) {
                 if (topItem != null && topItem.getBaseItem().allowSit()) {
                     if (!habbo.getRoomUnit().hasStatus(RoomUnitStatus.SIT)) {
